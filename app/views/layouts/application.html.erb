@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title><%= content_for?(:title) ? yield(:title) : "KGene" %></title>
+	<meta name="description" content="<%= content_for?(:description) ? yield(:description) : "KGene" %>">
+	<%= stylesheet_link_tag 'application', media: 'all' %>
+	<%= javascript_include_tag 'application'%>
+	<%= csrf_meta_tags %>
+</head>
+<body>
+	<header>
+		<%= render 'layouts/navigation' %>
+	</header>
+	<main role="main">
+		<%= render 'layouts/messages' %>
+		<!-- Jumbotron - primary message or actions -->
+		<% if content_for?(:jumbo) %>
+			<div class='jumbotron'>
+				<%= yield(:jumbo) %>
+			</div>
+		<% end %>
+		
+		<% if content_for?(:top_bar) || content_for?(:item_bar)%>
+			<div class='container page-header'>
+				<% if content_for?(:item_bar) %>
+						<div class='pull-right'>
+							<%= yield(:item_bar) %>
+						</div>
+				<% end %>
+				<%= yield(:top_bar) %>
+			</div>
+		<% end %>
+		
+		<div class='container clearfix'>
+			<%= yield %>
+		</div>
+	</main>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.9/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.9/js/jquery.dataTables.js"></script>
+
+<script>
+  $(document).ready( function () {
+      $('#orthologs').DataTable({
+        pageLength: 100,
+        order: [[4,'desc'], [0,'asc']],
+        "dom": '<lif<t>ip>'
+      });
+  } );
+</script>
+
+<% content_for :top_bar do %>
+	<h1><%= @org_gene %></h1>
+<% end %>
+
+
+<table id="orthologs">
+  <thead>
+    <th width="10%">Entry</th>
+    <th width="25%">Definition</th>
+    <th width="37%">Species</th>
+    <th width="5%">Length</th>
+    <th width="8%">SW Score</th>
+    <th width="5%">Margin</th>
+    <th width="5%">Bits</th>
+    <th width="5%">Identity</th>
+  </thead>
+
+	<% @orthologs.each do |ortholog| %>
+    <tr>
+      <td>
+        <%= link_to ortholog[:entry], "https://www.kegg.jp/dbget-bin/www_bget?#{ortholog[:entry]}", target: "_blank" %>
+      </td>
+      <td><%= ortholog[:definition].truncate(35) %></td>
+      <td><%= ortholog[:species].nil? ? '' : ortholog[:species].name %></td>
+      <td><%= ortholog[:len] %></td>
+      <td><%= ortholog[:sw_score] %></td>
+      <td><%= ortholog[:margin] %></td>
+      <td><%= ortholog[:bits] %></td>
+      <td><%= ortholog[:identity] %></td>
+    </tr>
+	<% end %>
+</table>

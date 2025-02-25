@@ -1,0 +1,43 @@
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.9/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.9/js/jquery.dataTables.js"></script>
+
+<script>
+  $(document).ready( function () {
+      $('#genes').DataTable({
+        pageLength: 100,
+        order: [[6,'asc'], [0,'asc']]
+      });
+  } );
+</script>
+  
+<h1><%= @organism.name %></h1>
+
+<table id="genes">
+  <thead>
+    <tr>
+      <th colspan="2">Gene</th>
+      <th colspan="5">Ortholog</th>
+    </tr>
+    <tr>
+      <th width="10%">Gene</th>
+      <th width="24%">Name</th>
+      <th width="24%">Description</th>
+      <th width="24%">Species</th>
+      <th width="5%">Length</th>
+      <th width="8%">SW Score</th>
+      <th width="5%">Identity</th>
+    </tr>
+  </thead>
+
+	<% @organism.genes.each do |gene| %>
+    <tr>
+      <td><%= link_to gene.name, "https://www.kegg.jp/dbget-bin/www_bget?#{gene.name}", target: "_blank" %></td>
+      <td><%= gene.description.truncate(35) %></td>
+      <td><%= gene.ortholog_description %></td>
+      <td><%= gene.ortholog_species %></td>
+      <td><%= gene.ortholog_length %></td>
+      <td><%= gene.ortholog_sw_score %></td>
+      <td><%= gene.ortholog_identity.nil? ? '' : sprintf('%.3f',gene.ortholog_identity) %></td>
+    </tr>
+	<% end %>
+</table>

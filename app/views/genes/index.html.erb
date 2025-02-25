@@ -1,0 +1,37 @@
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.9/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.9/js/jquery.dataTables.js"></script>
+
+<script>
+  $(document).ready( function () {
+      $('#genes').DataTable({
+        pageLength: 100,
+        order: [0,'asc'],
+        columns: [
+          null,
+          null,
+          { "orderable": false,
+            "searchable": false }
+        ],
+      });
+  } );
+</script>
+  
+<h1><%= @organism.name %></h1>
+
+<h3><%= link_to "Lookup New Organism", root_path %></h3>
+
+<table id="genes">
+  <thead>
+    <th width="10%">Gene</th>
+    <th width="80%">Name</th>
+    <th width="10%">Options</th>
+  </thead>
+
+	<% @genes.each do |gene| %>
+    <tr>
+      <td><%= link_to gene[0], "https://www.kegg.jp/dbget-bin/www_bget?#{gene[0]}", target: "_blank" %></td>
+      <td><%= gene[1] %></td>
+      <td><%= link_to "Find Orthologs", orthologs_path(org_gene: gene[0]), target: "_blank" %></td>
+    </tr>
+	<% end %>
+</table>

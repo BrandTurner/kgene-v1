@@ -1,0 +1,27 @@
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.9/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.9/js/jquery.dataTables.js"></script>
+
+<script>
+  $(document).ready( function () {
+      $('#genes').DataTable({
+        pageLength: 100,
+        order: [0,'asc']
+      });
+  } );
+</script>
+  
+<h1><%= @organism.name %></h1>
+
+<table id="genes">
+  <thead>
+    <th width="10%">Gene</th>
+    <th width="90%">Name</th>
+  </thead>
+
+	<% @organism.genes.each do |gene| %>
+    <tr>
+      <td><%= link_to gene.name, "https://www.kegg.jp/dbget-bin/www_bget?#{gene.name}", target: "_blank" %></td>
+      <td><%= gene.description %></td>
+    </tr>
+	<% end %>
+</table>

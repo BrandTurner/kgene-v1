@@ -1,0 +1,35 @@
+<% if user_signed_in? %>
+  <h1>KEGG Gene List by Organism Code</h1>
+
+  <script>
+  $(function() {
+    var tabKey = 9;
+    $('#org_code').autocomplete({
+      minLength: 3,
+      source: '<%= organisms_path(:json) %>',
+      select: function(event, ui) {
+        $('#org_name').html(ui.item.label);
+        $('#submit').show();
+        if (event.keyCode != tabKey) { 
+          $("form [type='submit']").focus();
+        }
+      }
+    })
+  });
+  </script>
+  
+  <%= form_tag genes_path, method: :get do |f| %>
+    <p>
+      <label for="organisms">KEGG Organism Code:</label>
+      <%= text_field_tag 'org_code', nil, onkeyup: "$('#submit').hide()", required: true %>
+      <span id="organism_name"></span>
+    </p>
+
+    <div id="submit" style="display:none">
+      <h3 id="org_name"></h3>
+      <%= submit_tag 'Explore Genes' %>
+    </div>
+  <% end %>
+<% else %>
+  <h1><%= link_to "Sign in to begin", user_session_path %></h1>
+<% end %>

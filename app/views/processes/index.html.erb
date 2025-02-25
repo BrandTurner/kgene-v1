@@ -1,0 +1,94 @@
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.9/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.9/js/jquery.dataTables.js"></script>
+
+<% content_for :top_bar do %>
+  <h1>Process a KEGG Gene List by Organism Code</h1>
+<% end %>
+
+<% unless Organism.active_jobs.empty? %>
+  <p>An organism is currently being processed, please try again later.</p>
+<% else %>
+  <script>
+    $(function() {
+      var tabKey = 9;
+      $('#org_code').autocomplete({
+        minLength: 3,
+        source: '<%= organisms_path(:json) %>',
+        select: function(event, ui) {
+          $('#org_name').html(ui.item.label);
+          $('#submit').show();
+          if (event.keyCode != tabKey) { 
+            $("form [type='submit']").focus();
+          }
+        }
+      })
+    });
+  </script>
+
+  <%= form_tag processes_path, method: :get do |f| %>
+    <p>
+      <label for="organisms">KEGG Organism Code:</label>
+      <%= text_field_tag 'org_code', nil, onkeyup: "$('#submit').hide()", required: true %>
+      <span id="organism_name"></span>
+    </p>
+
+    <div id="submit" style="display:none">
+      <h3 id="org_name"></h3>
+      <%= submit_tag 'Process Genes' %>
+    </div>
+  <% end %>
+<% end %>
+
+<script>
+  $(document).ready( function () {
+      $('#organisms').DataTable({
+        pageLength: 100,
+        order: [0,'asc'],
+        columns: [
+          null,
+          null,
+          { "orderable": false,
+            "searchable": false }
+        ],
+        "dom": '<lif<t>ip>'
+      });
+  } );
+</script>
+
+<% unless @processed_organisms.empty? %>
+  <h1>Processed Organisms</h1>
+  
+  <table id="organisms">
+    <thead>
+      <tr>
+        <th>Org Code</th>
+        <th>Name</th>
+        <th>Options</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% @processed_organisms.each do |organism| %>
+        <tr>
+          <td><%= organism.code %></td>
+          <td><%= organism.name %></td>
+          <td>
+              <%= link_to "[Explore Orthologs]", explore_orthologs_processes_path(organism_id: organism) %>
+              <%= link_to "[Explore No Orthologs]", explore_no_orthologs_processes_path(organism_id: organism) %>
+            <% if organism.active_job? %>
+              <span style="color:green">Running (<%= number_to_percentage(organism.perc_complete) %>)</span>
+            <% else %>
+              <%= link_to "[Download]", download_processes_path(organism_id: organism) %>
+              <%#= link_to "[Rerun]", '#' %>
+              <%= link_to "[Remove]", remove_results_processes_path(organism_id: organism),
+                data: {confirm: "Are you sure you want to remove all analysis done for this organism?"} %>
+              <% if organism.job_error %>
+                <span style="color:red"><%= organism.job_error %></span>
+              <% end %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>

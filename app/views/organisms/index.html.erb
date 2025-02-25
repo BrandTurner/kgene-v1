@@ -1,0 +1,34 @@
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.9/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.9/js/jquery.dataTables.js"></script>
+
+<script>
+  $(document).ready( function () {
+      $('#organisms').DataTable({
+        pageLength: 100,
+        order: [0,'asc'],
+        "dom": '<lif<t>ip>'
+      });
+  } );
+</script>
+
+<% content_for :top_bar do %>
+	<h1>Listing Organisms</h1>
+<% end %>
+
+<table id="organisms">
+  <thead>
+    <tr>
+      <th>Org Code</th>
+      <th>Name</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @organisms.each do |organism| %>
+      <tr>
+        <td><%= organism.code %></td>
+        <td><%= organism.name %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
