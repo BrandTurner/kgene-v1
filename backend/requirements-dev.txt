@@ -2,8 +2,10 @@
 
 # Testing
 pytest==7.4.4
-pytest-asyncio==0.23.3
+pytest-asyncio==0.21.1   # Compatible with pytest 7.4.4
 pytest-cov==4.1.0
+pytest-mock==3.12.0      # Enhanced mocking utilities
+fakeredis==2.21.0        # In-memory Redis for testing
 
 # Code quality
 black==24.1.1
