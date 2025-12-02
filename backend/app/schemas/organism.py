@@ -41,8 +41,8 @@ class Organism(OrganismBase):
 
 
 class OrganismWithProgress(Organism):
-    """Organism schema with gene processing progress."""
+    """Organism schema with gene processing progress and statistics."""
 
     total_genes: int = 0
     genes_with_orthologs: int = 0
-    progress_percent: float = 0.0
+    coverage_percent: Optional[float] = None  # Percentage of genes with orthologs found

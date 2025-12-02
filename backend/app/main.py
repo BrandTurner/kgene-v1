@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.api import organisms, genes
+from app.api import organisms, genes, processes
 
 settings = get_settings()
 
@@ -24,6 +24,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(organisms.router, prefix="/api", tags=["organisms"])
 app.include_router(genes.router, prefix="/api", tags=["genes"])
+app.include_router(processes.router, prefix="/api", tags=["processes"])
 
 
 @app.get("/api/health")
