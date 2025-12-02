@@ -90,13 +90,14 @@ Progress: progress:{job_id} (our custom progress tracking)
 import logging
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, func
 from arq import create_pool
 from arq.connections import RedisSettings
 import redis.asyncio as async_redis
 
+from app.core.exceptions import OrganismNotFoundError
 from app.database import get_db
 from app.models import Organism, Gene
 from app.schemas.organism import Organism as OrganismSchema, OrganismWithProgress
@@ -236,10 +237,7 @@ async def start_processing(
     organism = result.scalar_one_or_none()
 
     if not organism:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organism with ID {organism_id} not found"
-        )
+        raise OrganismNotFoundError(organism_id=organism_id)
 
     # === CHECK IF ALREADY PROCESSING ===
 
@@ -358,10 +356,7 @@ async def get_progress(
     organism = result.scalar_one_or_none()
 
     if not organism:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organism with ID {organism_id} not found"
-        )
+        raise OrganismNotFoundError(organism_id=organism_id)
 
     # === CHECK REDIS PROGRESS (Real-time) ===
 
@@ -472,10 +467,7 @@ async def delete_results(
     organism = result.scalar_one_or_none()
 
     if not organism:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organism with ID {organism_id} not found"
-        )
+        raise OrganismNotFoundError(organism_id=organism_id)
 
     # === DELETE GENES ===
 

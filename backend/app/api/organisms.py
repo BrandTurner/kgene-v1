@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 
+from app.core.exceptions import DuplicateOrganismError, OrganismNotFoundError
 from app.database import get_db
 from app.models import Organism
 from app.schemas import organism as schemas
@@ -36,10 +37,7 @@ async def create_organism(
     )
     existing = result.scalar_one_or_none()
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Organism with code '{organism_in.code}' already exists"
-        )
+        raise DuplicateOrganismError(code=organism_in.code)
 
     # Create new organism
     db_organism = Organism(**organism_in.model_dump())
@@ -60,10 +58,7 @@ async def get_organism(
     )
     organism = result.scalar_one_or_none()
     if not organism:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organism with id {organism_id} not found"
-        )
+        raise OrganismNotFoundError(organism_id=organism_id)
     return organism
 
 
@@ -79,10 +74,7 @@ async def update_organism(
     )
     organism = result.scalar_one_or_none()
     if not organism:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organism with id {organism_id} not found"
-        )
+        raise OrganismNotFoundError(organism_id=organism_id)
 
     # Update organism fields
     update_data = organism_in.model_dump(exclude_unset=True)
@@ -105,10 +97,7 @@ async def delete_organism(
     )
     organism = result.scalar_one_or_none()
     if not organism:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organism with id {organism_id} not found"
-        )
+        raise OrganismNotFoundError(organism_id=organism_id)
 
     await db.delete(organism)
     await db.commit()

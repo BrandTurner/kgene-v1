@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
 
+from app.core.exceptions import GeneNotFoundError, OrganismNotFoundError
 from app.database import get_db
 from app.models import Gene, Organism
 from app.schemas import gene as schemas
@@ -40,10 +41,7 @@ async def create_gene(
     )
     organism = result.scalar_one_or_none()
     if not organism:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Organism with id {gene_in.organism_id} not found"
-        )
+        raise OrganismNotFoundError(organism_id=gene_in.organism_id)
 
     # Create new gene
     db_gene = Gene(**gene_in.model_dump())
@@ -64,10 +62,7 @@ async def get_gene(
     )
     gene = result.scalar_one_or_none()
     if not gene:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Gene with id {gene_id} not found"
-        )
+        raise GeneNotFoundError(gene_id=gene_id)
     return gene
 
 
@@ -83,10 +78,7 @@ async def update_gene(
     )
     gene = result.scalar_one_or_none()
     if not gene:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Gene with id {gene_id} not found"
-        )
+        raise GeneNotFoundError(gene_id=gene_id)
 
     # Update gene fields
     update_data = gene_in.model_dump(exclude_unset=True)
@@ -109,10 +101,7 @@ async def delete_gene(
     )
     gene = result.scalar_one_or_none()
     if not gene:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Gene with id {gene_id} not found"
-        )
+        raise GeneNotFoundError(gene_id=gene_id)
 
     await db.delete(gene)
     await db.commit()
