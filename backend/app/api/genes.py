@@ -1,29 +1,93 @@
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List, Optional
+from typing import List
 
 from app.core.exceptions import GeneNotFoundError, OrganismNotFoundError
 from app.database import get_db
 from app.models import Gene, Organism
 from app.schemas import gene as schemas
+from app.schemas.filters import GeneListParams
 
 router = APIRouter()
 
 
 @router.get("/genes", response_model=List[schemas.Gene])
 async def list_genes(
-    organism_id: Optional[int] = Query(None, description="Filter by organism ID"),
-    skip: int = 0,
-    limit: int = 100,
+    params: GeneListParams = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
-    """List all genes, optionally filtered by organism."""
-    query = select(Gene)
-    if organism_id is not None:
-        query = query.where(Gene.organism_id == organism_id)
-    query = query.offset(skip).limit(limit)
+    """
+    List all genes with optional filtering and sorting.
 
+    **Query Parameters**:
+    - organism_id: Filter by organism ID
+    - has_ortholog: Filter by ortholog presence (true=has, false=no ortholog)
+    - min_identity: Minimum ortholog identity percentage (0-100)
+    - max_identity: Maximum ortholog identity percentage (0-100)
+    - ortholog_species: Filter by ortholog species (case-insensitive partial match)
+    - sort_by: Field to sort by (name/ortholog_identity/ortholog_sw_score/created_at)
+    - order: Sort order (asc/desc)
+    - skip: Pagination offset (default: 0)
+    - limit: Max records to return (default: 100, max: 1000)
+
+    **Bioinformatics Examples**:
+    ```
+    # Get genes WITH orthologs for E. coli
+    GET /genes?organism_id=1&has_ortholog=true
+
+    # Get genes WITHOUT orthologs (orphan genes)
+    GET /genes?organism_id=1&has_ortholog=false
+
+    # Get high-confidence orthologs (>70% identity)
+    GET /genes?organism_id=1&min_identity=70.0&sort_by=ortholog_identity&order=desc
+
+    # Get genes with human orthologs
+    GET /genes?organism_id=1&ortholog_species=Homo sapiens
+    ```
+    """
+    # Start with base query
+    query = select(Gene)
+
+    # Apply filters
+    if params.organism_id is not None:
+        query = query.where(Gene.organism_id == params.organism_id)
+
+    if params.has_ortholog is not None:
+        if params.has_ortholog:
+            # Has ortholog: ortholog_name is not null
+            query = query.where(Gene.ortholog_name.isnot(None))
+        else:
+            # No ortholog: ortholog_name is null
+            query = query.where(Gene.ortholog_name.is_(None))
+
+    if params.min_identity is not None:
+        # Filter by minimum identity percentage
+        query = query.where(Gene.ortholog_identity >= params.min_identity)
+
+    if params.max_identity is not None:
+        # Filter by maximum identity percentage
+        query = query.where(Gene.ortholog_identity <= params.max_identity)
+
+    if params.ortholog_species:
+        # Case-insensitive partial match on species name
+        query = query.where(Gene.ortholog_species.ilike(f"%{params.ortholog_species}%"))
+
+    # Apply sorting
+    if params.sort_by:
+        # Get the column to sort by
+        sort_column = getattr(Gene, params.sort_by)
+
+        # Apply ascending or descending order
+        if params.order == "desc":
+            query = query.order_by(sort_column.desc())
+        else:
+            query = query.order_by(sort_column.asc())
+
+    # Apply pagination
+    query = query.offset(params.skip).limit(params.limit)
+
+    # Execute query
     result = await db.execute(query)
     genes = result.scalars().all()
     return genes
