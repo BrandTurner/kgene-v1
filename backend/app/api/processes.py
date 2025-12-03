@@ -90,7 +90,8 @@ Progress: progress:{job_id} (our custom progress tracking)
 import logging
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, func
 from arq import create_pool
@@ -103,6 +104,7 @@ from app.models import Organism, Gene
 from app.schemas.organism import Organism as OrganismSchema, OrganismWithProgress
 from app.config import get_settings
 from app.workers.progress_tracker import ProgressTracker
+from app.services.csv_export import export_organism_genes_csv, get_csv_filename
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -583,6 +585,84 @@ async def list_processes(
         })
 
     return result_list
+
+
+@router.get("/processes/{organism_id}/download")
+async def download_organism_genes(
+    organism_id: int,
+    include_no_orthologs: bool = Query(
+        True,
+        description="Include genes without orthologs (orphan genes)"
+    ),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Download all genes for an organism as CSV.
+
+    **What**: Exports gene and ortholog data to CSV format
+    **Why**: Researchers need data for analysis in Excel, R, Python, etc.
+    **Format**: CSV with gene name, description, ortholog info
+
+    **Query Parameters**:
+    - include_no_orthologs: Include genes without orthologs (default: true)
+
+    **CSV Columns**:
+    - gene_name: KEGG gene ID (e.g., "eco:b0001")
+    - gene_description: Gene function from KEGG
+    - ortholog_name: Best ortholog gene ID
+    - ortholog_description: Ortholog function
+    - ortholog_species: Organism name (e.g., "Homo sapiens")
+    - ortholog_length: Sequence length
+    - ortholog_sw_score: Smith-Waterman alignment score
+    - ortholog_identity: Sequence identity percentage (0-100)
+
+    **Examples**:
+    ```bash
+    # Download all genes (including those without orthologs)
+    curl -O http://localhost:8000/api/processes/1/download
+
+    # Download only genes WITH orthologs found
+    curl -O http://localhost:8000/api/processes/1/download?include_no_orthologs=false
+    ```
+
+    **Bioinformatics Note**:
+    Genes without orthologs (orphan genes) are included by default because:
+    - They're scientifically interesting (species-specific genes)
+    - Researchers want complete datasets
+    - Empty ortholog columns clearly show "no match found"
+
+    **Returns**: CSV file as streaming response
+    - Content-Type: text/csv
+    - Content-Disposition: attachment (triggers download)
+    - Filename: {organism_code}_genes.csv
+    """
+    # Verify organism exists and get code
+    result = await db.execute(
+        select(Organism).where(Organism.id == organism_id)
+    )
+    organism = result.scalar_one_or_none()
+
+    if not organism:
+        raise OrganismNotFoundError(organism_id=organism_id)
+
+    # Generate CSV filename
+    filename = get_csv_filename(organism.code, include_no_orthologs)
+
+    logger.info(
+        f"Exporting genes for organism {organism_id} ({organism.code}) "
+        f"to CSV (include_no_orthologs={include_no_orthologs})"
+    )
+
+    # Stream CSV response
+    # **Why streaming**: Efficient for large datasets (4,600+ genes for E. coli)
+    # **Memory usage**: Generates CSV in chunks, never loads all data at once
+    return StreamingResponse(
+        export_organism_genes_csv(db, organism_id, include_no_orthologs),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
 
 
 # Export router for main.py to include

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
@@ -8,6 +9,7 @@ from app.database import get_db
 from app.models import Gene, Organism
 from app.schemas import gene as schemas
 from app.schemas.filters import GeneListParams
+from app.services.csv_export import export_genes_csv
 
 router = APIRouter()
 
@@ -91,6 +93,53 @@ async def list_genes(
     result = await db.execute(query)
     genes = result.scalars().all()
     return genes
+
+
+@router.get("/genes/export")
+async def export_genes_filtered(
+    params: GeneListParams = Depends(),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Export filtered genes to CSV with the same filtering options as the list endpoint.
+
+    **Query Parameters**: Same as GET /genes
+    - organism_id: Filter by organism ID
+    - has_ortholog: Filter by ortholog presence (true=has, false=no ortholog)
+    - min_identity: Minimum ortholog identity percentage (0-100)
+    - max_identity: Maximum ortholog identity percentage (0-100)
+    - ortholog_species: Filter by ortholog species (case-insensitive partial match)
+    - limit: Max records to export (default: 100, max: 1000)
+
+    **Returns**: CSV file download with columns:
+    - gene_name, gene_description, ortholog_name, ortholog_description
+    - ortholog_species, ortholog_length, ortholog_sw_score, ortholog_identity
+
+    **Examples**:
+    ```
+    # Export all genes with orthologs for organism 1
+    GET /genes/export?organism_id=1&has_ortholog=true
+
+    # Export high-confidence orthologs (>70% identity)
+    GET /genes/export?organism_id=1&min_identity=70.0
+
+    # Export genes with human orthologs
+    GET /genes/export?organism_id=1&ortholog_species=Homo sapiens
+    ```
+    """
+    return StreamingResponse(
+        export_genes_csv(
+            db,
+            organism_id=params.organism_id,
+            has_ortholog=params.has_ortholog,
+            min_identity=params.min_identity,
+            max_identity=params.max_identity,
+            ortholog_species=params.ortholog_species,
+            limit=params.limit
+        ),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=genes_export.csv"}
+    )
 
 
 @router.post("/genes", response_model=schemas.Gene, status_code=status.HTTP_201_CREATED)
