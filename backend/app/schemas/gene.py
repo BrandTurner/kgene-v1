@@ -28,9 +28,37 @@ class GeneBase(BaseModel):
 
 
 class GeneCreate(GeneBase):
-    """Schema for creating a new gene."""
+    """
+    Schema for creating a new gene.
 
-    pass
+    **What**: Allows creating genes with or without ortholog data
+    **Use cases**:
+    1. Create bare gene (just name/description) - worker fills orthologs later
+    2. Create gene with ortholog data (for testing or manual entry)
+    """
+
+    # Optional ortholog fields (can be provided at creation or added later)
+    ortholog_name: Optional[str] = Field(None, max_length=100)
+    ortholog_description: Optional[str] = Field(None, max_length=500)
+    ortholog_species: Optional[str] = Field(None, max_length=200)
+    ortholog_length: Optional[int] = Field(None, ge=0, description="Ortholog sequence length (>= 0)")
+    ortholog_sw_score: Optional[int] = Field(None, ge=0, description="Smith-Waterman alignment score (>= 0)")
+    ortholog_identity: Optional[float] = Field(
+        None,
+        ge=0.0,
+        le=100.0,
+        description="Sequence identity percentage (0-100)"
+    )
+
+    @field_validator('ortholog_identity')
+    @classmethod
+    def validate_ortholog_identity(cls, v: Optional[float]) -> Optional[float]:
+        """Validate ortholog identity is 0-100%."""
+        if v is not None and (v < 0.0 or v > 100.0):
+            raise ValueError(
+                f"Ortholog identity must be between 0.0 and 100.0 percent. Got: {v}"
+            )
+        return v
 
 
 class GeneUpdate(BaseModel):

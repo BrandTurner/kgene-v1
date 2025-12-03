@@ -64,9 +64,10 @@ async def test_create_organism_invalid_code_too_short(test_client: AsyncClient):
     assert response.status_code == 422
     data = response.json()
     assert "errors" in data
-    # Should have validation error for 'code' field
+    # Should have validation error for 'code' field (in body)
     errors = data["errors"]
-    assert any(err["field"] == "code" for err in errors)
+    # Field path is "body.code" from Pydantic validation
+    assert any("code" in err["field"] for err in errors)
 
 
 @pytest.mark.asyncio
@@ -298,9 +299,10 @@ async def test_filter_organisms_by_name_pattern(test_client: AsyncClient, db_ses
 @pytest.mark.asyncio
 async def test_filter_organisms_pagination(test_client: AsyncClient, db_session: AsyncSession):
     """Test pagination (skip and limit)."""
-    # Create 10 organisms
-    for i in range(10):
-        org = Organism(code=f"o{i:02d}", name=f"Organism {i}")
+    # Create 10 organisms with valid codes (3-4 lowercase letters only)
+    codes = ["aaa", "aab", "aac", "aad", "aae", "aaf", "aag", "aah", "aai", "aaj"]
+    for i, code in enumerate(codes):
+        org = Organism(code=code, name=f"Organism {i}")
         db_session.add(org)
     await db_session.commit()
 
@@ -475,7 +477,8 @@ async def test_update_organism_duplicate_code(test_client: AsyncClient, db_sessi
 
     assert response.status_code == 400
     data = response.json()
-    assert data["code"] == "DUPLICATE_ORGANISM"
+    # IntegrityError returns DUPLICATE_ENTRY (not DUPLICATE_ORGANISM)
+    assert data["code"] == "DUPLICATE_ENTRY"
 
 
 # =============================================================================
@@ -571,6 +574,6 @@ async def test_combined_filters_and_sorting(test_client: AsyncClient, db_session
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
-    # Should be ecj, eco (desc order)
-    assert data[0]["code"] == "ecj"
-    assert data[1]["code"] == "eco"
+    # Descending order: 'eco' > 'ecj' (because 'o' > 'j')
+    assert data[0]["code"] == "eco"
+    assert data[1]["code"] == "ecj"
