@@ -32,6 +32,7 @@ We use 'function' scope for database to ensure test isolation.
 """
 
 import pytest
+import pytest_asyncio
 import asyncio
 from typing import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -62,7 +63,7 @@ import fakeredis.aioredis
 # =============================================================================
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def db_engine():
     """
     Create an in-memory SQLite database engine for testing.
@@ -100,7 +101,7 @@ async def db_engine():
     await engine.dispose()
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
     """
     Provide a database session for tests.
@@ -137,7 +138,7 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 # =============================================================================
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def sample_organism(db_session: AsyncSession) -> Organism:
     """
     Create a sample organism in the test database.
@@ -163,7 +164,7 @@ async def sample_organism(db_session: AsyncSession) -> Organism:
     return organism
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def sample_genes(db_session: AsyncSession, sample_organism: Organism) -> list[Gene]:
     """
     Create sample genes for testing.
@@ -214,7 +215,7 @@ async def sample_genes(db_session: AsyncSession, sample_organism: Organism) -> l
     return genes
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def organism_with_genes(sample_organism: Organism, sample_genes: list[Gene]) -> Organism:
     """
     Convenience fixture: organism already populated with genes.
@@ -281,7 +282,7 @@ def mock_kegg_client():
     return mock
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def fake_redis():
     """
     In-memory Redis simulation using fakeredis.
@@ -427,7 +428,7 @@ ko:K00928\tsce:YHR161C"""
 # =============================================================================
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """
     FastAPI test client for testing API endpoints.
