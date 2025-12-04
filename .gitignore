@@ -34,6 +34,45 @@ bower.json
 # Ignore pow environment settings
 .powenv
 
-# Ignore Compiled Python files
+# Python compiled files and cache
 __pycache__/
 *.py[cod]
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Frontend (Node.js)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.env.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files (keep .env.development for frontend)
+.env
+.env.production
+backend/.env
+backend/.env.local

@@ -1,9 +1,12 @@
 -r requirements.txt
 
 # Testing
-pytest==7.4.4
-pytest-asyncio==0.23.3
+pytest==9.0.1
+pytest-asyncio==1.3.0    # Compatible with pytest 9.x
 pytest-cov==4.1.0
+pytest-mock==3.12.0      # Enhanced mocking utilities
+fakeredis==2.21.0        # In-memory Redis for testing
+aiosqlite==0.21.0        # Async SQLite for test database
 
 # Code quality
 black==24.1.1
